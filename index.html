@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NARASIMHAPURAM_LEAGUE - Live Cricket</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      text-align: center;
+      padding: 20px;
+    }
+    h1 {
+      color: darkgreen;
+    }
+    .scoreboard {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      display: inline-block;
+      margin-top: 20px;
+    }
+    .buttons button {
+      margin: 5px;
+      padding: 10px 15px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .four { background: orange; }
+    .six { background: red; color: white; }
+    .wicket { background: black; color: white; }
+    .dot { background: gray; color: white; }
+    .wide, .noball { background: purple; color: white; }
+  </style>
+</head>
+<body>
+  <h1>🏏 NARASIMHAPURAM_LEAGUE</h1>
+  <h2 id="matchStatus">Live Match</h2>
+
+  <div class="scoreboard">
+    <h3 id="liveScore">Team A: 0/0 (0 overs) | Team B: 0/0 (0 overs)</h3>
+  </div>
+
+  <div class="buttons">
+    <h3>Update Score (Team A)</h3>
+    <button onclick="addRun('TeamA',1)">1</button>
+    <button onclick="addRun('TeamA',2)">2</button>
+    <button onclick="addRun('TeamA',3)">3</button>
+    <button class="four" onclick="addRun('TeamA',4)">4</button>
+    <button class="six" onclick="addRun('TeamA',6)">6</button>
+    <button class="dot" onclick="addRun('TeamA',0)">•</button>
+    <button class="wide" onclick="addExtra('TeamA','wide')">Wide</button>
+    <button class="noball" onclick="addExtra('TeamA','noball')">No Ball</button>
+    <button class="wicket" onclick="addWicket('TeamA')">Wicket</button>
+  </div>
+
+  <br>
+  <div class="buttons">
+    <h3>Update Score (Team B)</h3>
+    <button onclick="addRun('TeamB',1)">1</button>
+    <button onclick="addRun('TeamB',2)">2</button>
+    <button onclick="addRun('TeamB',3)">3</button>
+    <button class="four" onclick="addRun('TeamB',4)">4</button>
+    <button class="six" onclick="addRun('TeamB',6)">6</button>
+    <button class="dot" onclick="addRun('TeamB',0)">•</button>
+    <button class="wide" onclick="addExtra('TeamB','wide')">Wide</button>
+    <button class="noball" onclick="addExtra('TeamB','noball')">No Ball</button>
+    <button class="wicket" onclick="addWicket('TeamB')">Wicket</button>
+  </div>
+
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, update, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDh0hT_cXzfbm6_9lok3ZEUhSgSdNGfLvs",
+      authDomain: "narasimhapuram-league.firebaseapp.com",
+      projectId: "narasimhapuram-league",
+      storageBucket: "narasimhapuram-league.appspot.com",
+      messagingSenderId: "363496473980",
+      appId: "1:363496473980:web:1769724c9522fd8be3d0f9"
+    };
+
+    // Init Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Default Score State
+    let scores = {
+      TeamA: { runs: 0, wickets: 0, balls: 0 },
+      TeamB: { runs: 0, wickets: 0, balls: 0 }
+    };
+
+    // Save to Firebase
+    function saveScore() {
+      update(ref(db, "match/currentScore"), scores);
+    }
+
+    // Add Run
+    window.addRun = function(team, run) {
+      scores[team].runs += run;
+      scores[team].balls++;
+      saveScore();
+    }
+
+    // Add Extra
+    window.addExtra = function(team, type) {
+      scores[team].runs += 1;
+      if (type === "noball" || type === "wide") {
+        // No ball / wide does NOT count as legal delivery
+      }
+      saveScore();
+    }
+
+    // Add Wicket
+    window.addWicket = function(team) {
+      scores[team].wickets++;
+      scores[team].balls++;
+      saveScore();
+    }
+
+    // Listen for Live Updates
+    onValue(ref(db, "match/currentScore"), (snapshot) => {
+      if (snapshot.exists()) {
+        scores = snapshot.val();
+        let oversA = Math.floor(scores.TeamA.balls / 6) + "." + (scores.TeamA.balls % 6);
+        let oversB = Math.floor(scores.TeamB.balls / 6) + "." + (scores.TeamB.balls % 6);
+        document.getElementById("liveScore").innerText =
+          `Team A: ${scores.TeamA.runs}/${scores.TeamA.wickets} (${oversA} overs) | Team B: ${scores.TeamB.runs}/${scores.TeamB.wickets} (${oversB} overs)`;
+      }
+    });
+  </script>
+</body>
+</html>
